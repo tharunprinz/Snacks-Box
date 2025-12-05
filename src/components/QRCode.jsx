@@ -6,7 +6,7 @@ const QRCode = ({ amount, isOpen, onClose }) => {
   if (!isOpen) return null;
 
   // Generate UPI payment string (you can customize this)
-  const upiId = 'snackbox@paytm'; // Replace with actual UPI ID
+  const upiId = '9150488115@superyes'; // Replace with actual UPI ID
   const paymentString = `upi://pay?pa=${upiId}&am=${amount}&cu=INR&tn=SNACK BOX Order`;
 
   return (
