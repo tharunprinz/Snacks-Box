@@ -11,6 +11,7 @@ import CustomerAuth from './components/CustomerAuth';
 import CustomerProfile from './components/CustomerProfile';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
+import Footer from './components/Footer';
 import './styles/App.css';
 import './styles/animations.css';
 
@@ -98,6 +99,7 @@ function App() {
                 )}
               </>
             )}
+            <Footer />
           </div>
         </MenuProvider>
       </CartProvider>

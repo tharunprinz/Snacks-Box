@@ -10,6 +10,8 @@ const FEEDBACK_STORAGE_KEY = 'snackbox_feedback';
 const CUSTOMER_TOKEN_KEY = 'snackbox_customer_token';
 const ADMIN_TOKEN_KEY = 'snackbox_admin_token';
 const PROMO_STORAGE_KEY = 'snackbox_promo';
+const LOYALTY_STORAGE_KEY = 'snackbox_loyalty';
+const ADMIN_CREDENTIALS_KEY = 'snackbox_admin_credentials';
 
 export const storage = {
   // Menu operations
@@ -168,6 +170,59 @@ export const storage = {
       ...promo,
       lastUpdated: new Date().toISOString(),
     }));
+  },
+
+  // Loyalty Program operations
+  getLoyaltyPoints: (userId) => {
+    const stored = localStorage.getItem(LOYALTY_STORAGE_KEY);
+    const loyalty = stored ? JSON.parse(stored) : {};
+    return loyalty[userId] || { points: 0, history: [] };
+  },
+
+  addLoyaltyPoints: (userId, points, reason) => {
+    const stored = localStorage.getItem(LOYALTY_STORAGE_KEY);
+    const loyalty = stored ? JSON.parse(stored) : {};
+    const userLoyalty = loyalty[userId] || { points: 0, history: [] };
+    userLoyalty.points = (userLoyalty.points || 0) + points;
+    userLoyalty.history.push({
+      points,
+      reason,
+      date: new Date().toISOString(),
+    });
+    loyalty[userId] = userLoyalty;
+    localStorage.setItem(LOYALTY_STORAGE_KEY, JSON.stringify(loyalty));
+    return userLoyalty;
+  },
+
+  redeemLoyaltyPoints: (userId, points) => {
+    const stored = localStorage.getItem(LOYALTY_STORAGE_KEY);
+    const loyalty = stored ? JSON.parse(stored) : {};
+    const userLoyalty = loyalty[userId] || { points: 0, history: [] };
+    if (userLoyalty.points >= points) {
+      userLoyalty.points -= points;
+      userLoyalty.history.push({
+        points: -points,
+        reason: 'Points Redeemed',
+        date: new Date().toISOString(),
+      });
+      loyalty[userId] = userLoyalty;
+      localStorage.setItem(LOYALTY_STORAGE_KEY, JSON.stringify(loyalty));
+      return userLoyalty;
+    }
+    return null;
+  },
+
+  // Admin Credentials
+  getAdminCredentials: () => {
+    const stored = localStorage.getItem(ADMIN_CREDENTIALS_KEY);
+    return stored ? JSON.parse(stored) : {
+      userId: 'admin',
+      password: 'admin123', // Default, should be changed
+    };
+  },
+
+  saveAdminCredentials: (credentials) => {
+    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(credentials));
   },
 };
 

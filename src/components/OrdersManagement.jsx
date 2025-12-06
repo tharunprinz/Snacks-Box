@@ -6,9 +6,14 @@ import { format } from 'date-fns';
 const OrdersManagement = () => {
   const [orders, setOrders] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadOrders();
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(loadOrders, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadOrders = () => {
@@ -69,11 +74,49 @@ const OrdersManagement = () => {
     }
   };
 
-  const sortedUsers = Object.values(ordersByUser).sort((a, b) => {
+  // Filter orders
+  const filteredOrders = orders.filter(order => {
+    const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
+    const matchesSearch = searchTerm === '' || 
+      order.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.id?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  // Recalculate grouped orders with filtered data
+  const filteredOrdersByUser = filteredOrders.reduce((acc, order) => {
+    const userKey = order.userId || order.userEmail || 'guest';
+    const userName = order.userName || 'Guest User';
+    
+    if (!acc[userKey]) {
+      acc[userKey] = {
+        userId: order.userId,
+        userName,
+        userEmail: order.userEmail || '',
+        userPhone: order.userPhone || '',
+        orders: [],
+      };
+    }
+    acc[userKey].orders.push(order);
+    return acc;
+  }, {});
+
+  const sortedUsers = Object.values(filteredOrdersByUser).sort((a, b) => {
     const aLatest = new Date(a.orders[a.orders.length - 1]?.date || 0);
     const bLatest = new Date(b.orders[b.orders.length - 1]?.date || 0);
     return bLatest - aLatest;
   });
+
+  // Calculate statistics
+  const stats = {
+    total: orders.length,
+    pending: orders.filter(o => o.status === 'pending').length,
+    accepted: orders.filter(o => o.status === 'accepted').length,
+    delivered: orders.filter(o => o.status === 'delivered').length,
+    declined: orders.filter(o => o.status === 'declined').length,
+    totalRevenue: orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0),
+  };
 
   return (
     <motion.div
@@ -81,11 +124,59 @@ const OrdersManagement = () => {
       animate={{ opacity: 1, y: 0 }}
       className="bg-white rounded-2xl shadow-lg p-6 mb-6"
     >
-      <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-primary-yellow">
-        <h2 className="text-2xl font-bold text-primary-brown">Orders Management</h2>
-        <span className="text-sm text-gray-600">
-          Total Orders: {orders.length}
-        </span>
+      <div className="mb-6 pb-4 border-b-2 border-primary-yellow">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-primary-brown">Orders Management</h2>
+          <span className="text-sm text-gray-600">
+            Total Orders: {stats.total}
+          </span>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+          <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+            <p className="text-xs text-gray-600">Pending</p>
+            <p className="text-xl font-bold text-yellow-700">{stats.pending}</p>
+          </div>
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <p className="text-xs text-gray-600">Accepted</p>
+            <p className="text-xl font-bold text-blue-700">{stats.accepted}</p>
+          </div>
+          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+            <p className="text-xs text-gray-600">Delivered</p>
+            <p className="text-xl font-bold text-green-700">{stats.delivered}</p>
+          </div>
+          <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+            <p className="text-xs text-gray-600">Declined</p>
+            <p className="text-xl font-bold text-red-700">{stats.declined}</p>
+          </div>
+          <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+            <p className="text-xs text-gray-600">Revenue</p>
+            <p className="text-xl font-bold text-purple-700">₹{stats.totalRevenue.toFixed(0)}</p>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row gap-3">
+          <input
+            type="text"
+            placeholder="Search by name, email, or order ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary-yellow focus:outline-none transition-all duration-300"
+          />
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary-yellow focus:outline-none transition-all duration-300"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="accepted">Accepted</option>
+            <option value="delivered">Delivered</option>
+            <option value="declined">Declined</option>
+          </select>
+        </div>
       </div>
 
       {sortedUsers.length === 0 ? (

@@ -38,6 +38,15 @@ const Billing = ({ onBack }) => {
     };
 
     storage.saveOrder(newOrder);
+    
+    // Award loyalty points (10 points per ₹100 spent)
+    if (customer?.id) {
+      const pointsEarned = Math.floor(total / 100) * 10;
+      if (pointsEarned > 0) {
+        storage.addLoyaltyPoints(customer.id, pointsEarned, `Order ${newOrder.id}`);
+      }
+    }
+    
     setOrder(newOrder);
     setOrderPlaced(true);
     clearCart();

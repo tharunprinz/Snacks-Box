@@ -4,6 +4,7 @@ import SalesReport from './SalesReport';
 import FeedbackAdmin from './FeedbackAdmin';
 import PromoManager from './PromoManager';
 import OrdersManagement from './OrdersManagement';
+import Footer from './Footer';
 
 const AdminDashboard = ({ onLogout }) => {
   return (
@@ -49,6 +50,7 @@ const AdminDashboard = ({ onLogout }) => {
         {/* Feedback Admin */}
         <FeedbackAdmin />
       </motion.div>
+      <Footer />
     </div>
   );
 };

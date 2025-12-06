@@ -16,6 +16,14 @@ const PromoManager = () => {
     imageUrl: '',
     available: true,
   });
+  const [newSpecialForm, setNewSpecialForm] = useState({
+    name: '',
+    price: '',
+    category: '',
+    subcategory: '',
+    imageUrl: '',
+    available: true,
+  });
 
   useEffect(() => {
     setPromoData(storage.getPromo());
@@ -90,7 +98,7 @@ const PromoManager = () => {
       message += `\n`;
     }
 
-    message += `Visit us today! 🍽️\n\nThank you for being a valued customer! 💝`;
+    message += `📍 Karpagam College of Engineering\n🕐 Everyday: 9:00 AM – 9:00 PM\n📞 +91-9500633444\n\nVisit us today! 🍽️\n\nThank you for being a valued customer! 💝`;
 
     // Simulate WhatsApp send (in production, this would call WhatsApp API)
     console.log(`Sending WhatsApp to ${customers.length} customers:`);
@@ -98,6 +106,11 @@ const PromoManager = () => {
     
     // In production, you would call your WhatsApp API here
     // Example: await sendWhatsAppMessage(customer.phone, message);
+
+    // Update promo card immediately
+    const updatedPromo = { ...promoData };
+    storage.savePromo(updatedPromo);
+    setPromoData(updatedPromo);
 
     setWhatsappSent(true);
     setTimeout(() => setWhatsappSent(false), 3000);
@@ -204,11 +217,119 @@ const PromoManager = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="space-y-4"
+          className="space-y-6"
         >
+          {/* Add New Item Form */}
+          <div className="bg-yellow-50 rounded-xl p-6 border-2 border-yellow-200">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">➕ Add New Daily Special Item</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Item Name *
+                </label>
+                <input
+                  type="text"
+                  value={newSpecialForm.name}
+                  onChange={(e) => setNewSpecialForm({ ...newSpecialForm, name: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-all duration-300"
+                  placeholder="Enter item name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Price (₹) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newSpecialForm.price}
+                  onChange={(e) => setNewSpecialForm({ ...newSpecialForm, price: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-all duration-300"
+                  placeholder="Enter price"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Category *
+                </label>
+                <select
+                  value={newSpecialForm.category}
+                  onChange={(e) => setNewSpecialForm({ ...newSpecialForm, category: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-all duration-300"
+                >
+                  <option value="">Select Category</option>
+                  {['BAKE TREATS', 'SNACKS & BITES', 'DRINKS & SHAKES', 'ICE CREAM & MORE', 'SPECIALS'].map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Subcategory
+                </label>
+                <input
+                  type="text"
+                  value={newSpecialForm.subcategory}
+                  onChange={(e) => setNewSpecialForm({ ...newSpecialForm, subcategory: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-all duration-300"
+                  placeholder="e.g., Brownie, Cookies"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Image URL
+                </label>
+                <input
+                  type="text"
+                  value={newSpecialForm.imageUrl}
+                  onChange={(e) => setNewSpecialForm({ ...newSpecialForm, imageUrl: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-all duration-300"
+                  placeholder="Enter image URL (optional)"
+                />
+                {newSpecialForm.imageUrl && (
+                  <img
+                    src={newSpecialForm.imageUrl}
+                    alt="Preview"
+                    className="mt-2 rounded-lg max-w-xs h-32 object-cover border-2 border-gray-300"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+            <motion.button
+              onClick={() => {
+                if (newSpecialForm.name && newSpecialForm.price && newSpecialForm.category) {
+                  const newItem = addMenuItem({
+                    ...newSpecialForm,
+                    price: parseFloat(newSpecialForm.price),
+                    isOffer: true,
+                  });
+                  handleAddSpecial(newItem.id);
+                  setNewSpecialForm({
+                    name: '',
+                    price: '',
+                    category: '',
+                    subcategory: '',
+                    imageUrl: '',
+                    available: true,
+                  });
+                }
+              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="mt-4 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              ➕ Add to Daily Specials
+            </motion.button>
+          </div>
+
+          {/* Select Existing Items */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Select Items for Daily Specials
+              Or Select Existing Items for Daily Specials
             </label>
             <select
               onChange={(e) => {
@@ -230,32 +351,36 @@ const PromoManager = () => {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {promoData.dailySpecials.map(itemId => {
-              const item = menu.find(m => m.id === itemId);
-              if (!item) return null;
-              return (
-                <motion.div
-                  key={itemId}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-primary-yellow"
-                >
-                  <span className="font-medium text-gray-800">{item.name} - ₹{item.price}</span>
-                  <button
-                    onClick={() => handleRemoveSpecial(itemId)}
-                    className="text-red-600 hover:text-red-800 font-bold text-lg transition-colors"
+          {/* Current Daily Specials List */}
+          <div>
+            <h3 className="text-lg font-bold text-gray-800 mb-3">Current Daily Specials</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {promoData.dailySpecials.map(itemId => {
+                const item = menu.find(m => m.id === itemId);
+                if (!item) return null;
+                return (
+                  <motion.div
+                    key={itemId}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-primary-yellow"
                   >
-                    ×
-                  </button>
-                </motion.div>
-              );
-            })}
-          </div>
+                    <span className="font-medium text-gray-800">{item.name} - ₹{item.price}</span>
+                    <button
+                      onClick={() => handleRemoveSpecial(itemId)}
+                      className="text-red-600 hover:text-red-800 font-bold text-lg transition-colors"
+                    >
+                      ×
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
 
-          {promoData.dailySpecials.length === 0 && (
-            <p className="text-gray-500 text-center py-4">No daily specials selected</p>
-          )}
+            {promoData.dailySpecials.length === 0 && (
+              <p className="text-gray-500 text-center py-4">No daily specials added yet</p>
+            )}
+          </div>
         </motion.div>
       )}
 

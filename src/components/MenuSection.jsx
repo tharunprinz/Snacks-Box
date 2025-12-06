@@ -3,13 +3,24 @@ import MenuItem from './MenuItem';
 import PromoCard from './PromoCard';
 import ShopShowcase from './ShopShowcase';
 import CustomerFeedback from './CustomerFeedback';
-import { useState } from 'react';
+import LoyaltyProgram from './LoyaltyProgram';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { storage } from '../utils/storage';
 
 const MenuSection = () => {
   const { menu } = useMenu();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [promoData, setPromoData] = useState(storage.getPromo());
+
+  // Listen for promo updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPromoData(storage.getPromo());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Get unique categories
   const categories = ['ALL', ...new Set(menu.map(item => item.category))];
@@ -56,6 +67,7 @@ const MenuSection = () => {
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
       <ShopShowcase />
       <PromoCard />
+      <LoyaltyProgram />
       
       {/* Search and Filter Section */}
       <motion.div

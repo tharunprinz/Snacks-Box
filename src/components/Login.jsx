@@ -3,81 +3,96 @@ import { motion } from 'framer-motion';
 import { storage } from '../utils/storage';
 
 const Login = ({ onLogin }) => {
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
-  // Default admin password (in production, this should be hashed and stored securely)
-  const ADMIN_PASSWORD = 'admin123'; // Change this to your desired password
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
 
-    if (password === ADMIN_PASSWORD) {
+    const credentials = storage.getAdminCredentials();
+    
+    if (userId === credentials.userId && password === credentials.password) {
       storage.setAdminAuth(true);
       onLogin();
     } else {
-      setError('Incorrect password. Please try again.');
+      setError('Invalid User ID or Password. Please try again.');
+      setUserId('');
       setPassword('');
     }
   };
 
   return (
-    <div className="login-page">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="login-header"
+        className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full"
       >
-        <h1>SNACK BOX</h1>
-        <p>Admin Login</p>
-      </motion.div>
-
-      <form onSubmit={handleSubmit}>
-        {error && (
-          <motion.div
-            className="login-error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            {error}
-          </motion.div>
-        )}
-
-        <div className="form-group">
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter admin password"
-            required
-            autoFocus
-          />
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-yellow to-primary-brown bg-clip-text text-transparent mb-2">
+            SNACK BOX
+          </h1>
+          <p className="text-gray-600">Admin Login</p>
         </div>
 
-        <motion.button
-          type="submit"
-          className="form-btn submit-btn"
-          style={{ width: '100%' }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Login
-        </motion.button>
-      </form>
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <motion.div
+              className="bg-red-100 text-red-800 px-4 py-3 rounded-lg mb-4 text-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              {error}
+            </motion.div>
+          )}
 
-      <p style={{ 
-        marginTop: '1rem', 
-        textAlign: 'center', 
-        fontSize: '0.85rem', 
-        color: '#666' 
-      }}>
-        Default password: admin123
-      </p>
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              User ID
+            </label>
+            <input
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="Enter User ID"
+              required
+              autoFocus
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-yellow focus:outline-none transition-all duration-300"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter Password"
+              required
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-yellow focus:outline-none transition-all duration-300"
+            />
+          </div>
+
+          <motion.button
+            type="submit"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-gradient-to-r from-primary-yellow to-primary-brown text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            Login
+          </motion.button>
+        </form>
+
+        <p className="mt-4 text-center text-xs text-gray-500">
+          Default: User ID: <strong>admin</strong> | Password: <strong>admin123</strong>
+        </p>
+      </motion.div>
     </div>
   );
 };
 
 export default Login;
-

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
 import { storage } from '../utils/storage';
 import { format } from 'date-fns';
+import LoyaltyProgram from './LoyaltyProgram';
 
 const CustomerProfile = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -55,7 +56,7 @@ const CustomerProfile = ({ isOpen, onClose }) => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '600px' }}
+        style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}
       >
         <div className="cart-header">
           <h2>My Profile</h2>
@@ -80,8 +81,13 @@ const CustomerProfile = ({ isOpen, onClose }) => {
             </motion.div>
           )}
 
-          {!isEditing ? (
+              {!isEditing ? (
             <div>
+              {/* Loyalty Program */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <LoyaltyProgram />
+              </div>
+
               <div style={{ marginBottom: '1.5rem' }}>
                 <h3 style={{ color: '#AD703C', marginBottom: '0.5rem' }}>Personal Information</h3>
                 <p><strong>Name:</strong> {customer?.name}</p>
