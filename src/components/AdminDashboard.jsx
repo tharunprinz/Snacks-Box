@@ -3,6 +3,7 @@ import MenuManager from './MenuManager';
 import SalesReport from './SalesReport';
 import FeedbackAdmin from './FeedbackAdmin';
 import PromoManager from './PromoManager';
+import OrdersManagement from './OrdersManagement';
 
 const AdminDashboard = ({ onLogout }) => {
   return (
@@ -32,6 +33,9 @@ const AdminDashboard = ({ onLogout }) => {
             </motion.button>
           </div>
         </div>
+
+        {/* Orders Management */}
+        <OrdersManagement />
 
         {/* Promo Manager */}
         <PromoManager />

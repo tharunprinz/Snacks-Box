@@ -48,6 +48,15 @@ export const storage = {
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
   },
 
+  updateOrder: (orderId, updates) => {
+    const orders = storage.getOrders();
+    const updated = orders.map(order =>
+      order.id === orderId ? { ...order, ...updates } : order
+    );
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
   // Admin auth
   isAdminAuthenticated: () => {
     return !!localStorage.getItem(ADMIN_TOKEN_KEY);

@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
+import { storage } from '../utils/storage';
+import { format } from 'date-fns';
 
 const CustomerProfile = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
   const { customer, updateCustomer, logout } = useCustomer();
   const [isEditing, setIsEditing] = useState(false);
+  const [myOrders, setMyOrders] = useState([]);
   const [formData, setFormData] = useState({
     name: customer?.name || '',
     email: customer?.email || '',
@@ -13,6 +16,18 @@ const CustomerProfile = ({ isOpen, onClose }) => {
     address: customer?.address || '',
   });
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    if (customer) {
+      const allOrders = storage.getOrders();
+      const userOrders = allOrders.filter(order => 
+        order.userId === customer.id || 
+        (order.userEmail && order.userEmail === customer.email) ||
+        (order.userPhone && order.userPhone === customer.phone)
+      );
+      setMyOrders(userOrders.sort((a, b) => new Date(b.date) - new Date(a.date)));
+    }
+  }, [customer, isOpen]);
 
   const handleSave = () => {
     updateCustomer(formData);
@@ -74,6 +89,63 @@ const CustomerProfile = ({ isOpen, onClose }) => {
                 <p><strong>Phone:</strong> {customer?.phone}</p>
                 <p><strong>Address:</strong> {customer?.address || 'Not provided'}</p>
               </div>
+
+              {/* My Orders Section */}
+              {myOrders.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ color: '#AD703C', marginBottom: '0.5rem' }}>My Orders</h3>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {myOrders.map((order) => {
+                      const getStatusColor = (status) => {
+                        switch (status) {
+                          case 'pending': return { bg: '#fff3cd', text: '#856404', icon: '⏳' };
+                          case 'accepted': return { bg: '#d1ecf1', text: '#0c5460', icon: '✅' };
+                          case 'declined': return { bg: '#f8d7da', text: '#721c24', icon: '❌' };
+                          case 'delivered': return { bg: '#d4edda', text: '#155724', icon: '🚚' };
+                          default: return { bg: '#e2e3e5', text: '#383d41', icon: '📦' };
+                        }
+                      };
+                      const statusStyle = getStatusColor(order.status);
+                      return (
+                        <motion.div
+                          key={order.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          style={{
+                            background: statusStyle.bg,
+                            color: statusStyle.text,
+                            padding: '0.75rem',
+                            borderRadius: '8px',
+                            marginBottom: '0.5rem',
+                            border: `2px solid ${statusStyle.text}40`,
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <p style={{ fontWeight: 'bold', margin: 0 }}>{statusStyle.icon} Order #{order.id}</p>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+                              {order.status === 'pending' && 'Pending'}
+                              {order.status === 'accepted' && 'Accepted'}
+                              {order.status === 'declined' && 'Declined'}
+                              {order.status === 'delivered' && 'Delivered'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                            {order.items.map((item, idx) => (
+                              <span key={idx}>
+                                {item.name} × {item.quantity}{idx < order.items.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                            <span>Total: ₹{order.total.toFixed(2)}</span>
+                            <span>{format(new Date(order.date), 'MMM dd, yyyy HH:mm')}</span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {customer?.offersReceived && customer.offersReceived.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>

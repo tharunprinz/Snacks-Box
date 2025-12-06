@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCart } from '../context/CartContext';
+import { useCustomer } from '../context/CustomerContext';
 import { storage } from '../utils/storage';
 import QRCode from './QRCode';
 import PrintBill from './PrintBill';
@@ -8,6 +9,7 @@ import { format } from 'date-fns';
 
 const Billing = ({ onBack }) => {
   const { cart, getTotal, clearCart } = useCart();
+  const { customer } = useCustomer();
   const [showQR, setShowQR] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [order, setOrder] = useState(null);
@@ -20,6 +22,10 @@ const Billing = ({ onBack }) => {
   const handlePlaceOrder = () => {
     const newOrder = {
       id: `ORD-${Date.now()}`,
+      userId: customer?.id || null,
+      userName: customer?.name || 'Guest',
+      userEmail: customer?.email || '',
+      userPhone: customer?.phone || '',
       items: cart.map(item => ({
         id: item.id,
         name: item.name,
@@ -28,7 +34,7 @@ const Billing = ({ onBack }) => {
       })),
       total: total,
       date: new Date().toISOString(),
-      status: 'completed',
+      status: 'pending', // Changed to pending so admin can accept/decline
     };
 
     storage.saveOrder(newOrder);
