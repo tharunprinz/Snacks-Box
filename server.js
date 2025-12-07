@@ -65,9 +65,10 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 SNACK BOX API server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 SNACK BOX API server running on port ${PORT}`);
   console.log(`📧 Email service configured: ${process.env.EMAIL_USER || 'snackbox2121@gmail.com'}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
   // Verify email configuration after server starts (env vars are loaded)
   verifyEmailConfig();

@@ -9,7 +9,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Path to users Excel file
-const USERS_EXCEL_PATH = path.join(__dirname, '../data/users_data.xlsx');
+// Use environment variable for production, or default to local path
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
+const USERS_EXCEL_PATH = path.join(DATA_DIR, 'users_data.xlsx');
+
+// Ensure data directory exists
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  console.log(`✅ Created data directory: ${DATA_DIR}`);
+}
 
 // Read users from Excel who opted in for WhatsApp
 function getWhatsAppUsers() {
