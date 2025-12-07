@@ -50,7 +50,6 @@ const AdminDashboard = ({ onLogout }) => {
         {/* Feedback Admin */}
         <FeedbackAdmin />
       </motion.div>
-      <Footer />
     </div>
   );
 };

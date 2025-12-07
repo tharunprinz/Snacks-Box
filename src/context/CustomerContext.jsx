@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
+import { saveUsersToBackend } from '../utils/backendStorage';
 
 const CustomerContext = createContext();
 
@@ -25,7 +26,7 @@ export const CustomerProvider = ({ children }) => {
   }, []);
 
   // Email-based login/registration (OTP flow handled in UI)
-  const loginWithEmail = (customerData) => {
+  const loginWithEmail = async (customerData) => {
     const now = new Date().toISOString();
     const existing =
       (customerData.email && storage.getCustomerByEmail(customerData.email)) ||
@@ -51,6 +52,16 @@ export const CustomerProvider = ({ children }) => {
     storage.setCustomerToken(token);
 
     storage.saveCustomer(newCustomer);
+    
+    // Save to backend Excel (server-side)
+    try {
+      const allCustomers = storage.getAllCustomers();
+      await saveUsersToBackend(allCustomers);
+    } catch (error) {
+      console.error('Failed to save to backend Excel:', error);
+      // Continue even if backend save fails
+    }
+    
     setCustomer(newCustomer);
     setIsLoggedIn(true);
     return newCustomer;
@@ -63,9 +74,19 @@ export const CustomerProvider = ({ children }) => {
     storage.setCustomerToken(null);
   };
 
-  const updateCustomer = (updates) => {
+  const updateCustomer = async (updates) => {
     const updatedCustomer = { ...customer, ...updates };
     storage.saveCustomer(updatedCustomer);
+    
+    // Save to backend Excel (server-side)
+    try {
+      const allCustomers = storage.getAllCustomers();
+      await saveUsersToBackend(allCustomers);
+    } catch (error) {
+      console.error('Failed to save to backend Excel:', error);
+      // Continue even if backend save fails
+    }
+    
     setCustomer(updatedCustomer);
   };
 

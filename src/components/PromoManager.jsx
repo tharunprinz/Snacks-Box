@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { storage } from '../utils/storage';
 import { useMenu } from '../context/MenuContext';
+import { getUsersFromBackend } from '../utils/backendStorage';
+import { showToast } from './Toast';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const PromoManager = () => {
   const { menu, addMenuItem } = useMenu();
@@ -75,45 +79,47 @@ const PromoManager = () => {
     storage.savePromo(updated);
   };
 
-  const handleSendWhatsApp = () => {
-    const customers = storage.getAllCustomers().filter(c => c.whatsappOptIn);
-    const specials = menu.filter(item => promoData.dailySpecials.includes(item.id));
-    const arrivals = menu.filter(item => promoData.newArrivals.includes(item.id));
+  const handleSendWhatsApp = async () => {
+    try {
+      const specials = menu.filter(item => promoData.dailySpecials.includes(item.id));
+      const arrivals = menu.filter(item => promoData.newArrivals.includes(item.id));
 
-    let message = `🎉 *SNACK BOX - Daily Specials & New Arrivals*\n\n`;
-    
-    if (specials.length > 0) {
-      message += `⭐ *Daily Specials:*\n`;
-      specials.forEach(item => {
-        message += `• ${item.name} - ₹${item.price}\n`;
+      if (specials.length === 0 && arrivals.length === 0) {
+        showToast('Please add daily specials or new arrivals first', 'error');
+        return;
+      }
+
+      // Call backend API to send WhatsApp
+      const response = await fetch(`${API_BASE_URL}/whatsapp/send-specials`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dailySpecials: promoData.dailySpecials,
+          newArrivals: promoData.newArrivals,
+          menu: menu,
+        }),
       });
-      message += `\n`;
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to send WhatsApp messages');
+      }
+
+      // Update promo card immediately
+      const updatedPromo = { ...promoData };
+      storage.savePromo(updatedPromo);
+      setPromoData(updatedPromo);
+
+      showToast(`WhatsApp sent to ${result.successful} customers! 📱`, 'success');
+      setWhatsappSent(true);
+      setTimeout(() => setWhatsappSent(false), 3000);
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+      showToast(error.message || 'Failed to send WhatsApp messages', 'error');
     }
-
-    if (arrivals.length > 0) {
-      message += `🆕 *New Arrivals:*\n`;
-      arrivals.forEach(item => {
-        message += `• ${item.name} - ₹${item.price}\n`;
-      });
-      message += `\n`;
-    }
-
-    message += `📍 Karpagam College of Engineering\n🕐 Everyday: 9:00 AM – 9:00 PM\n📞 +91-9500633444\n\nVisit us today! 🍽️\n\nThank you for being a valued customer! 💝`;
-
-    // Simulate WhatsApp send (in production, this would call WhatsApp API)
-    console.log(`Sending WhatsApp to ${customers.length} customers:`);
-    console.log(message);
-    
-    // In production, you would call your WhatsApp API here
-    // Example: await sendWhatsAppMessage(customer.phone, message);
-
-    // Update promo card immediately
-    const updatedPromo = { ...promoData };
-    storage.savePromo(updatedPromo);
-    setPromoData(updatedPromo);
-
-    setWhatsappSent(true);
-    setTimeout(() => setWhatsappSent(false), 3000);
   };
 
   const availableItems = menu.filter(item => item.available);
@@ -316,6 +322,9 @@ const PromoManager = () => {
                     imageUrl: '',
                     available: true,
                   });
+                  showToast(`${newItem.name} added to Daily Specials! ⭐`, 'success');
+                } else {
+                  showToast('Please fill all required fields', 'error');
                 }
               }}
               whileHover={{ scale: 1.02 }}
@@ -478,6 +487,9 @@ const PromoManager = () => {
                     imageUrl: '',
                     available: true,
                   });
+                  showToast(`${newItem.name} added to New Arrivals! 🆕`, 'success');
+                } else {
+                  showToast('Please fill all required fields', 'error');
                 }
               }}
               whileHover={{ scale: 1.02 }}

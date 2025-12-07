@@ -6,6 +6,7 @@ import { storage } from '../utils/storage';
 import QRCode from './QRCode';
 import PrintBill from './PrintBill';
 import { format } from 'date-fns';
+import { showToast } from './Toast';
 
 const Billing = ({ onBack }) => {
   const { cart, getTotal, clearCart } = useCart();
@@ -43,12 +44,16 @@ const Billing = ({ onBack }) => {
     if (customer?.id) {
       const pointsEarned = Math.floor(total / 100) * 10;
       if (pointsEarned > 0) {
-        storage.addLoyaltyPoints(customer.id, pointsEarned, `Order ${newOrder.id}`);
+        const result = storage.addLoyaltyPoints(customer.id, pointsEarned, `Order ${newOrder.id}`);
+        if (result) {
+          showToast(`Earned ${pointsEarned} loyalty points! ⭐`, 'success');
+        }
       }
     }
     
     setOrder(newOrder);
     setOrderPlaced(true);
+    showToast('Order placed successfully! ✅', 'success');
     clearCart();
   };
 

@@ -12,6 +12,7 @@ import CustomerProfile from './components/CustomerProfile';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
+import ToastContainer from './components/Toast';
 import './styles/App.css';
 import './styles/animations.css';
 
@@ -101,6 +102,7 @@ function App() {
             )}
             <Footer />
           </div>
+          <ToastContainer />
         </MenuProvider>
       </CartProvider>
     </CustomerProvider>

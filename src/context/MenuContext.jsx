@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
 import { initialMenuData } from '../data/menuData';
+import { getMenuFromExcel, syncMenuToExcel } from '../utils/excelStorage';
 
 const MenuContext = createContext();
 
@@ -16,14 +17,35 @@ export const MenuProvider = ({ children }) => {
   const [menu, setMenu] = useState([]);
 
   useEffect(() => {
-    // Load menu from localStorage or use initial data
-    const savedMenu = storage.getMenu();
-    if (savedMenu && savedMenu.length > 0) {
-      setMenu(savedMenu);
-    } else {
-      setMenu(initialMenuData);
-      storage.saveMenu(initialMenuData);
-    }
+    // Try to load from Excel first, then localStorage, then initial data
+    const loadMenu = async () => {
+      try {
+        const excelMenu = await getMenuFromExcel();
+        if (excelMenu && excelMenu.length > 0) {
+          setMenu(excelMenu);
+          storage.saveMenu(excelMenu);
+        } else {
+          const savedMenu = storage.getMenu();
+          if (savedMenu && savedMenu.length > 0) {
+            setMenu(savedMenu);
+          } else {
+            setMenu(initialMenuData);
+            storage.saveMenu(initialMenuData);
+            syncMenuToExcel(initialMenuData);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading menu:', error);
+        const savedMenu = storage.getMenu();
+        if (savedMenu && savedMenu.length > 0) {
+          setMenu(savedMenu);
+        } else {
+          setMenu(initialMenuData);
+          storage.saveMenu(initialMenuData);
+        }
+      }
+    };
+    loadMenu();
   }, []);
 
   const addMenuItem = (item) => {
@@ -36,6 +58,7 @@ export const MenuProvider = ({ children }) => {
     setMenu(prevMenu => {
       const newMenu = [...prevMenu, newItem];
       storage.saveMenu(newMenu);
+      syncMenuToExcel(newMenu); // Sync to Excel
       return newMenu;
     });
     
@@ -48,6 +71,7 @@ export const MenuProvider = ({ children }) => {
         item.id === id ? { ...item, ...updates } : item
       );
       storage.saveMenu(newMenu);
+      syncMenuToExcel(newMenu); // Sync to Excel
       return newMenu;
     });
   };
@@ -56,6 +80,7 @@ export const MenuProvider = ({ children }) => {
     setMenu(prevMenu => {
       const newMenu = prevMenu.filter(item => item.id !== id);
       storage.saveMenu(newMenu);
+      syncMenuToExcel(newMenu); // Sync to Excel
       return newMenu;
     });
   };

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
 import { storage } from '../utils/storage';
+import { showToast } from './Toast';
 
 const LoyaltyProgram = () => {
   const { customer } = useCustomer();
@@ -16,6 +17,17 @@ const LoyaltyProgram = () => {
     }
   }, [customer]);
 
+  // Refresh loyalty points periodically (in case points are added from another tab/component)
+  useEffect(() => {
+    if (customer?.id) {
+      const interval = setInterval(() => {
+        const data = storage.getLoyaltyPoints(customer.id);
+        setLoyaltyData(data);
+      }, 2000); // Check every 2 seconds
+      return () => clearInterval(interval);
+    }
+  }, [customer]);
+
   const pointsToDiscount = (points) => {
     // 100 points = ₹10 discount
     return Math.floor(points / 100) * 10;
@@ -23,15 +35,19 @@ const LoyaltyProgram = () => {
 
   const handleRedeem = () => {
     const points = parseInt(redeemAmount);
+    if (!points || points < 100) {
+      showToast('Minimum 100 points required to redeem', 'error');
+      return;
+    }
     if (points && customer?.id) {
       const result = storage.redeemLoyaltyPoints(customer.id, points);
       if (result) {
         setLoyaltyData(result);
         setShowRedeem(false);
         setRedeemAmount('');
-        alert(`Successfully redeemed ${points} points! You can use ₹${pointsToDiscount(points)} discount on your next order.`);
+        showToast(`Successfully redeemed ${points} points! ₹${pointsToDiscount(points)} discount available! ⭐`, 'success');
       } else {
-        alert('Insufficient points!');
+        showToast('Insufficient points!', 'error');
       }
     }
   };

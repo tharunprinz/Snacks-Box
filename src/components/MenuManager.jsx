@@ -48,8 +48,10 @@ const MenuManager = () => {
 
     if (editingItem) {
       updateMenuItem(editingItem.id, itemData);
+      showToast(`${itemData.name} updated successfully! ✏️`, 'success');
     } else {
-      addMenuItem(itemData);
+      const newItem = addMenuItem(itemData);
+      showToast(`${newItem.name} added to menu! ✅`, 'success');
     }
 
     resetForm();
@@ -88,8 +90,10 @@ const MenuManager = () => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
+    const item = menu.find(i => i.id === id);
+    if (window.confirm(`Are you sure you want to delete "${item?.name}"?`)) {
       deleteMenuItem(id);
+      showToast(`${item?.name} deleted from menu`, 'info');
     }
   };
 

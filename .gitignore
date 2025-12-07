@@ -4,4 +4,48 @@ dist
 *.log
 .env
 .env.local
+.env.production
+.env.development
+
+# Excel Data Files (Sensitive)
+data/menu_data.xlsx
+data/users_data.xlsx
+backend/data/menu_data.xlsx
+backend/data/users_data.xlsx
+*.xlsx
+*.xls
+
+# Admin Credentials
+admin_credentials.json
+
+# Build outputs
+build/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
 

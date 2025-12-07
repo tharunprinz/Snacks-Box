@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
+import { generateAndStoreOTP, verifyOTP } from '../utils/emailOTP';
+import { showToast } from './Toast';
 
 const CustomerAuth = ({ isOpen, onClose, isLogin = false }) => {
   if (!isOpen) return null;
   const { loginWithEmail } = useCustomer();
-  const [step, setStep] = useState(isLogin ? 'otp' : 'email');
+  const [step, setStep] = useState('email');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,57 +15,95 @@ const CustomerAuth = ({ isOpen, onClose, isLogin = false }) => {
     address: '',
     whatsappOptIn: true,
   });
-  const [generatedOtp, setGeneratedOtp] = useState('');
   const [enteredOtp, setEnteredOtp] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (step === 'email') {
-      // Basic validation
-      if (!formData.name || !formData.email) {
-        setError('Please enter your name and email');
-        return;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        setError('Please enter a valid email address');
-        return;
-      }
-
-      // Generate demo OTP (in real app, request from backend + email)
-      const otp = Math.floor(1000 + Math.random() * 9000).toString();
-      setGeneratedOtp(otp);
-      setStep('otp');
-      setSuccess(`OTP sent to your email. (Demo OTP: ${otp})`);
+    if (!formData.name || !formData.email) {
+      setError('Please enter your name and email');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
-    if (step === 'otp') {
-      if (!enteredOtp) {
-        setError('Please enter the OTP you received');
-        return;
-      }
-      if (enteredOtp !== generatedOtp) {
-        setError('Invalid OTP. Please try again.');
-        return;
-      }
+    setIsLoading(true);
+    try {
+      await generateAndStoreOTP(formData.email);
+      setStep('otp');
+      setSuccess('OTP sent to your email! Please check your inbox.');
+      showToast('OTP sent to your email!', 'success');
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to send OTP. Please try again.';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+      console.error('OTP send error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      loginWithEmail({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        whatsappOptIn: formData.whatsappOptIn,
-      });
+  const handleOTPSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
 
-      setSuccess('Login successful! Welcome to SNACK BOX 🎉');
-      setTimeout(() => {
-        onClose();
-      }, 1200);
+    if (!enteredOtp) {
+      setError('Please enter the OTP you received');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await verifyOTP(formData.email, enteredOtp);
+      
+      if (result.valid) {
+        loginWithEmail({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          whatsappOptIn: formData.whatsappOptIn,
+        });
+
+        setSuccess('Login successful! Welcome to SNACK BOX 🎉');
+        showToast('Login successful! Welcome! 🎉', 'success');
+        setTimeout(() => {
+          onClose();
+        }, 1200);
+      } else {
+        setError(result.message);
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to verify OTP. Please try again.');
+      showToast(error.message || 'Failed to verify OTP', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    try {
+      await generateAndStoreOTP(formData.email);
+      setEnteredOtp('');
+      setSuccess('New OTP sent to your email!');
+      showToast('New OTP sent!', 'success');
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to resend OTP. Please try again.';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+      console.error('OTP resend error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -116,99 +156,121 @@ const CustomerAuth = ({ isOpen, onClose, isLogin = false }) => {
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            {step === 'email' && (
-              <>
-                <div className="form-group">
-                  <label>Full Name *</label>
+          {step === 'email' ? (
+            <form onSubmit={handleEmailSubmit}>
+              <div className="form-group">
+                <label>Full Name *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Email Address *</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Phone Number</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="Enter your phone number"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Address</label>
+                <textarea
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Enter your delivery address"
+                  rows="3"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>
                   <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter your full name"
-                    required
+                    type="checkbox"
+                    checked={formData.whatsappOptIn}
+                    onChange={(e) => setFormData({ ...formData, whatsappOptIn: e.target.checked })}
                   />
-                </div>
+                  {' '}Receive WhatsApp updates for daily specials and new arrivals
+                </label>
+              </div>
 
-                <div className="form-group">
-                  <label>Email *</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="you@example.com"
-                    required
-                  />
-                </div>
+              <motion.button
+                type="submit"
+                className="form-btn submit-btn"
+                style={{ width: '100%', marginTop: '1rem' }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Sending OTP...' : 'Send OTP'}
+              </motion.button>
+            </form>
+          ) : (
+            <form onSubmit={handleOTPSubmit}>
+              <div className="form-group">
+                <label>Enter OTP *</label>
+                <input
+                  type="text"
+                  value={enteredOtp}
+                  onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength="6"
+                  required
+                  autoFocus
+                  style={{ fontSize: '1.5rem', letterSpacing: '0.5rem', textAlign: 'center' }}
+                />
+                <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+                  Check your email for the OTP code
+                </p>
+              </div>
 
-                <div className="form-group">
-                  <label>Mobile Number</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="10-digit mobile number (optional)"
-                  />
-                </div>
+              <motion.button
+                type="submit"
+                className="form-btn submit-btn"
+                style={{ width: '100%', marginTop: '1rem' }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Verifying...' : 'Verify OTP'}
+              </motion.button>
 
-                <div className="form-group">
-                  <label>Address</label>
-                  <textarea
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Delivery address (optional)"
-                    rows="3"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.whatsappOptIn}
-                      onChange={(e) =>
-                        setFormData({ ...formData, whatsappOptIn: e.target.checked })
-                      }
-                    />{' '}
-                    Receive daily specials & new arrivals on WhatsApp
-                  </label>
-                </div>
-              </>
-            )}
-
-            {step === 'otp' && (
-              <>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    readOnly
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Enter OTP *</label>
-                  <input
-                    type="tel"
-                    value={enteredOtp}
-                    onChange={(e) => setEnteredOtp(e.target.value)}
-                    placeholder="4-digit OTP"
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            <motion.button
-              type="submit"
-              className="form-btn submit-btn"
-              style={{ width: '100%', marginTop: '1rem' }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {step === 'email' ? 'Send OTP' : 'Verify & Login'}
-            </motion.button>
-          </form>
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={isLoading}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#AD703C',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {isLoading ? 'Sending...' : 'Resend OTP'}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </motion.div>
     </motion.div>
@@ -216,4 +278,3 @@ const CustomerAuth = ({ isOpen, onClose, isLogin = false }) => {
 };
 
 export default CustomerAuth;
-

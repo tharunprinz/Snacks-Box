@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
+import { showToast } from '../components/Toast';
 
 const CartContext = createContext();
 
@@ -31,8 +32,10 @@ export const CartProvider = ({ children }) => {
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
+        showToast(`${item.name} quantity updated!`, 'success');
       } else {
         newCart = [...prevCart, { ...item, quantity: 1 }];
+        showToast(`${item.name} added to cart! 🛒`, 'success');
       }
       
       storage.saveCart(newCart);
@@ -42,8 +45,12 @@ export const CartProvider = ({ children }) => {
 
   const removeFromCart = (itemId) => {
     setCart(prevCart => {
-      const newCart = prevCart.filter(item => item.id !== itemId);
+      const item = prevCart.find(i => i.id === itemId);
+      const newCart = prevCart.filter(i => i.id !== itemId);
       storage.saveCart(newCart);
+      if (item) {
+        showToast(`${item.name} removed from cart`, 'info');
+      }
       return newCart;
     });
   };
@@ -66,6 +73,7 @@ export const CartProvider = ({ children }) => {
   const clearCart = () => {
     setCart([]);
     storage.clearCart();
+    showToast('Cart cleared', 'info');
   };
 
   const getTotal = () => {
