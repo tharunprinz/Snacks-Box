@@ -11,7 +11,7 @@ TERMINAL 1: Backend Server (REQUIRED)
 Run this command:
   npm run server
 
-You should see:
+You should see  :
   🚀 SNACK BOX API server running on http://localhost:3000
   📧 Email service configured: snackbox2121@gmail.com
   ✅ Email service verified and ready
